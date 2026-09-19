@@ -1,16 +1,13 @@
 {
   "name": "rose-bot-maker",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
-  "description": "Rose Bot Maker - update a Discord bot's application name and description.",
+  "description": "Rose Bot Maker - configure a Discord bot with custom slash commands.",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "engines": {
-    "node": ">=20"
-  },
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=20" },
   "dependencies": {
+    "discord.js": "^14.16.3",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0"
   }
