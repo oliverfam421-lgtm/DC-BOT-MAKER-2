@@ -1,26 +1,7 @@
 # Rose Bot Maker
 
-Describe commands in plain English in one box, and Rose Bot Maker registers them as real Discord slash commands.
+The bot now acknowledges slash commands immediately with `deferReply()` and then edits the response. This prevents Discord's **"This interaction failed"** or **"didn't respond in time"** message when Render or Discord takes more than a moment to process a command.
 
-Example:
+After deploying the latest commit, submit the setup form again to restart the bot. Check `/health` on your Render URL; it should show `{"ok":true,"botOnline":true}`.
 
-```text
-Make a ping command that replies Pong.
-Make a hello command that says Hello and welcomes the user.
-Make a rules command that replies Be respectful and follow the server rules.
-```
-
-This creates `/ping`, `/hello`, and `/rules`. Each command is registered with Discord and replies with the response extracted from its description.
-
-This version uses a safe built-in parser rather than an AI service. Supported wording includes `make`, `create`, or `add`, followed by a command name and `command that replies/says ...`. One command should be placed on each line. Complex actions such as music, moderation, databases, or external APIs require additional custom code.
-
-## Render deployment
-
-1. In Render, choose **New → Blueprint** and select this repository.
-2. Render reads `render.yaml`, installs dependencies, and runs `npm start`.
-3. Open the generated HTTPS URL.
-4. Enter the token, bot name, and plain-English command descriptions.
-5. Click **Start bot and create commands**.
-6. Click **Invite bot to your server** and authorize the bot.
-
-The token is held in memory only and is never written to a file or printed in logs. A restart requires submitting the form again. Never share a bot token; reset it in the Discord Developer Portal if exposed.
+If `/health` says `botOnline:false`, the Render service is asleep, crashed, or the bot token was rejected. Check Render logs and reset the token if it was exposed. Keep the Render service awake or use an always-on plan for a continuously available bot.

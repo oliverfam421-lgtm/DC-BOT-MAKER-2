@@ -37,10 +37,7 @@ function inferCommands(input) {
 }
 
 function page(message = '', error = false, inviteUrl = '') {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Rose Bot Maker</title><style>
-:root{color-scheme:dark;font-family:Inter,system-ui,sans-serif}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at top,#3b1d55,#120d1d 60%);color:#f8f4ff}main{width:min(100%,600px);padding:32px;border:1px solid #6e4a83;border-radius:22px;background:#190f24eb;box-shadow:0 20px 70px #0008}h1{margin:0 0 8px}h1 span{color:#f3a6d5}p{color:#c9bfd0;line-height:1.5}label{display:block;margin:20px 0 8px;font-weight:700}input,textarea{width:100%;border:1px solid #735785;border-radius:10px;padding:13px;color:white;background:#170e20;font:inherit}textarea{min-height:170px;resize:vertical}button,.invite{display:block;width:100%;margin-top:24px;padding:14px;border:0;border-radius:10px;text-align:center;text-decoration:none;color:#241229;background:linear-gradient(90deg,#f3a6d5,#c89cff);font-weight:800;font-size:1rem;cursor:pointer}button:hover,.invite:hover{filter:brightness(1.1)}.notice{margin-top:20px;padding:13px;border-radius:10px;background:${error ? '#5c202f' : '#193e36'}}small{display:block;margin-top:18px;color:#a99cae}code{color:#f3a6d5}</style></head><body><main>
-<h1>🌹 <span>Rose Bot Maker</span></h1><p>Describe the commands you want in plain English. Rose Bot Maker turns them into real slash commands.</p>${message ? `<div class="notice" role="status">${esc(message)}</div>` : ''}${inviteUrl ? `<a class="invite" href="${esc(inviteUrl)}" target="_blank" rel="noopener noreferrer">➕ Invite bot to your server</a>` : ''}
-<form method="post" action="/create"><label for="token">Discord bot token</label><input id="token" name="token" type="password" required autocomplete="off" maxlength="200" placeholder="Paste your bot token"><label for="name">Bot name</label><input id="name" name="name" type="text" required maxlength="32" placeholder="My Rose Bot"><label for="description">Bot description and commands</label><textarea id="description" name="description" required maxlength="6000" placeholder="Make a ping command that replies Pong.\nMake a hello command that says Hello and welcomes the user.\nMake a rules command that replies Be respectful."></textarea><button type="submit">Start bot and create commands</button></form><small>Write one command per line using plain English. Examples: <code>Make a ping command that replies Pong</code> or <code>Create a rules command that says Be respectful</code>. The command name and response are extracted and registered with Discord.</small></main></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Rose Bot Maker</title><style>:root{color-scheme:dark;font-family:Inter,system-ui,sans-serif}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at top,#3b1d55,#120d1d 60%);color:#f8f4ff}main{width:min(100%,600px);padding:32px;border:1px solid #6e4a83;border-radius:22px;background:#190f24eb;box-shadow:0 20px 70px #0008}h1{margin:0 0 8px}h1 span{color:#f3a6d5}p{color:#c9bfd0;line-height:1.5}label{display:block;margin:20px 0 8px;font-weight:700}input,textarea{width:100%;border:1px solid #735785;border-radius:10px;padding:13px;color:white;background:#170e20;font:inherit}textarea{min-height:170px;resize:vertical}button,.invite{display:block;width:100%;margin-top:24px;padding:14px;border:0;border-radius:10px;text-align:center;text-decoration:none;color:#241229;background:linear-gradient(90deg,#f3a6d5,#c89cff);font-weight:800;font-size:1rem;cursor:pointer}button:hover,.invite:hover{filter:brightness(1.1)}.notice{margin-top:20px;padding:13px;border-radius:10px;background:${error ? '#5c202f' : '#193e36'}}small{display:block;margin-top:18px;color:#a99cae}code{color:#f3a6d5}</style></head><body><main><h1>🌹 <span>Rose Bot Maker</span></h1><p>Describe the commands you want in plain English. Rose Bot Maker turns them into real slash commands.</p>${message ? `<div class="notice" role="status">${esc(message)}</div>` : ''}${inviteUrl ? `<a class="invite" href="${esc(inviteUrl)}" target="_blank" rel="noopener noreferrer">➕ Invite bot to your server</a>` : ''}<form method="post" action="/create"><label for="token">Discord bot token</label><input id="token" name="token" type="password" required autocomplete="off" maxlength="200" placeholder="Paste your bot token"><label for="name">Bot name</label><input id="name" name="name" type="text" required maxlength="32" placeholder="My Rose Bot"><label for="description">Bot description and commands</label><textarea id="description" name="description" required maxlength="6000" placeholder="Make a ping command that replies Pong.\nMake a hello command that says Hello and welcomes the user."></textarea><button type="submit">Start bot and create commands</button></form><small>Write one command per line. The bot acknowledges each interaction immediately, then sends the response.</small></main></body></html>`;
 }
 
 async function startBot(token, applicationId, botName, commands) {
@@ -50,16 +47,32 @@ async function startBot(token, applicationId, botName, commands) {
   await rest.put(Routes.applicationCommands(applicationId), { body: slashCommands });
   const client = new Client({ intents: [GatewayIntentBits.Guilds] });
   client.once('ready', () => console.log(`Rose Bot Maker started ${client.user.tag}`));
+  client.on('error', error => console.error(`Discord client error: ${error.message}`));
+  client.on('warn', warning => console.warn(`Discord warning: ${warning}`));
   client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
     const command = commands.find(item => item.name === interaction.commandName);
-    if (command) await interaction.reply(command.reply);
+    if (!command) return;
+    try {
+      // Discord requires an acknowledgement within three seconds. Defer first so
+      // even a slow Render instance never produces "didn't respond in time".
+      await interaction.deferReply();
+      await interaction.editReply(command.reply);
+    } catch (error) {
+      console.error(`Command /${interaction.commandName} failed: ${error.message}`);
+      try {
+        if (interaction.deferred && !interaction.replied) await interaction.editReply('Sorry, this command failed.');
+        else if (!interaction.replied) await interaction.reply({ content: 'Sorry, this command failed.', ephemeral: true });
+      } catch (_) {}
+    }
   });
+  client.on('shardError', error => console.error(`Discord shard error: ${error.message}`));
   await client.login(token);
   activeClient = client;
 }
 
 app.get('/', (_req, res) => res.type('html').send(page()));
+app.get('/health', (_req, res) => res.json({ ok: true, botOnline: Boolean(activeClient?.isReady()) }));
 app.post('/create', async (req, res) => {
   const token = typeof req.body.token === 'string' ? req.body.token.trim() : '';
   const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
@@ -68,7 +81,7 @@ app.post('/create', async (req, res) => {
   let commands;
   try { commands = inferCommands(descriptionInput); } catch (error) { return res.status(400).type('html').send(page(error.message, true)); }
   try {
-    const headers = { Authorization: `Bot ${token}`, 'Content-Type': 'application/json', 'User-Agent': 'RoseBotMaker/1.4' };
+    const headers = { Authorization: `Bot ${token}`, 'Content-Type': 'application/json', 'User-Agent': 'RoseBotMaker/1.5' };
     const meResponse = await fetch(`${discordApi}/users/@me`, { headers });
     if (!meResponse.ok) return res.status(401).type('html').send(page('Discord rejected that token.', true));
     const bot = await meResponse.json();
